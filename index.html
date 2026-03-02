@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta Observaciones UNAP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        button {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .card {
+            margin-top: 15px;
+            padding: 15px;
+            border-left: 5px solid #007bff;
+            background: #f9f9f9;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Consulta de Observaciones</h2>
+
+        <input type="text" id="dni" placeholder="Ingrese DNI">
+        <button onclick="consultar()">Consultar</button>
+
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        async function consultar() {
+            const dni = document.getElementById("dni").value.trim();
+            const resultado = document.getElementById("resultado");
+            resultado.innerHTML = "Cargando...";
+
+            if (!dni) {
+                resultado.innerHTML = "<p class='error'>Ingrese un DNI válido</p>";
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://test-admision.unap.edu.pe/service_observados/api/v1/observaciones/dni/${dni}`);
+
+                if (!response.ok) {
+                    throw new Error("No se encontró información");
+                }
+
+                const data = await response.json();
+
+                let html = `
+            <div class="card">
+                <p><strong>DNI:</strong> ${data.dni}</p>
+                <p><strong>¿Es observado?:</strong> ${data.es_observado ? "Sí" : "No"}</p>
+                <p><strong>Cantidad de observaciones:</strong> ${data.count_observados}</p>
+            </div>
+        `;
+
+                if (data.tiene_observacion && data.observados.length > 0) {
+                    data.observados.forEach(obs => {
+                        html += `
+                    <div class="card">
+                        <p><strong>Nombre completo:</strong> ${obs.nombres} ${obs.paterno} ${obs.materno}</p>
+                        <p><strong>Fecha sanción:</strong> ${obs.fecha_sancion || "No especificado"}</p>
+                        <p><strong>Fecha fin:</strong> ${obs.fecha_fin || "No especificado"}</p>
+                        <p><strong>Observación:</strong> ${obs.observaciones}</p>
+                        <p><strong>Tipo:</strong> ${obs.tipo_observacion}</p>
+                        <p><strong>Categoría:</strong> ${obs.categoria}</p>
+                    </div>
+                `;
+                    });
+                } else {
+                    html += `<p>No tiene observaciones registradas.</p>`;
+                }
+
+                resultado.innerHTML = html;
+
+            } catch (error) {
+                resultado.innerHTML = `<p class="error">Error al consultar el servicio</p>`;
+            }
+        }
+    </script>
+
+</body>
+
+</html>
